@@ -1,0 +1,14 @@
+[project]
+name = "mcp-ecobici"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.115.13",
+    "mcp[cli]>=1.9.4",
+    "pandas>=2.3.0",
+    "pydantic-ai>=0.3.1",
+    "requests>=2.32.4",
+    "sqlmodel>=0.0.24",
+]
