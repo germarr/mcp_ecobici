@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-bicycle"></i> Ecobici Bike-Sharing</h1>
+            <p class="subtitle">Explore the city on two wheels</p>
+        </header>
+        
+        <section class="welcome">
+            <div class="welcome-card">
+                <h2>Hello!</h2>
+                <p>Welcome to the Ecobici Bike-Sharing platform. This is a demonstration of a bike-sharing service 
+                   built with FastAPI and SQLite.</p>
+                <div class="buttons">
+                    <a href="/docs" class="btn primary"><i class="fas fa-book"></i> API Documentation</a>
+                    <button id="stationsBtn" class="btn secondary"><i class="fas fa-map-marker-alt"></i> View Stations</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="stations-section" class="stations-container" style="display: none;">
+            <h2>Available Bike Stations</h2>
+            <div id="stations-list" class="stations-list">
+                <!-- Stations will be loaded here via JavaScript -->
+                <div class="loading">Loading stations...</div>
+            </div>
+        </section>
+
+        <footer>
+            <p>&copy; 2025 Ecobici Bike-Sharing. All rights reserved.</p>
+            <p>A FastAPI demonstration application</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', path='/js/main.js') }}"></script>
+</body>
+</html>
