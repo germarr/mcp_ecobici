@@ -17,16 +17,31 @@ def _():
 
 
 @app.cell
-def _():
-    import sqlmodel
+def _(duckdb):
+    monthName = '2025_02'
+    fileFolder = 'D:/Ecobici/CLEAN'
 
-    DATABASE_URL = "sqlite:///C:/Users/gerym/Documents/mcp/mcp_ecobici/bike_sharing2.db"
-    engine = sqlmodel.create_engine(DATABASE_URL)
-    return
+    # testDataset = duckdb.sql(f""" 
+    # SELECT * FROM read_parquet(['{fileFolder}/2025_01.parquet'])
+    # """)
+
+    rides_all = duckdb.sql(f""" 
+    SELECT * EXCLUDE(fecha_retiro,fecha_arribo),fecha_retiro_completa::date AS fecha_retiro,fecha_arribo_completa::date AS fecha_arribo   
+        FROM read_parquet(['{fileFolder}/2025/*.parquet',
+        '{fileFolder}/2024/*.parquet',
+        '{fileFolder}/2023/*.parquet',
+        '{fileFolder}/2022/*.parquet',
+        '{fileFolder}/2021/*.parquet',
+        '{fileFolder}/2020/*.parquet',
+        '{fileFolder}/2019/*.parquet',
+        '{fileFolder}/2018/*.parquet',
+        '{fileFolder}/2017/*.parquet']) 
+    """)
+    return (rides_all,)
 
 
 @app.cell
-def _(duckdb):
+def _(duckdb, rides_all):
     path_u = 'C:/Users/gerym/Documents/mcp/mcp_ecobici/notebooks/data/2025_01.parquet'
 
     duckone_bikes = duckdb.sql(f""" 
@@ -34,7 +49,7 @@ def _(duckdb):
             EXCLUDE(hora_retiro,hora_arribo), 
             fecha_retiro_completa::TIME as hora_retiro,
             fecha_arribo_completa::TIME as hora_arribo 
-            FROM read_parquet("{path_u}") ORDER BY fecha_arribo ASC)
+            FROM rides_all ORDER BY fecha_arribo ASC)
 
     SELECT fecha_arribo,
         DATE_TRUNC('month', fecha_arribo::DATE) AS first_day_of_month,
@@ -46,8 +61,6 @@ def _(duckdb):
         GROUP BY 1, 2, 3 
         ORDER BY fecha_arribo::TIMESTAMP ASC
     """).df()
-
-    duckone_bikes
 
     return
 

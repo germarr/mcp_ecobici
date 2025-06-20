@@ -18,5 +18,6 @@ dependencies = [
     "python-dotenv>=1.1.0",
     "requests>=2.32.4",
     "seaborn>=0.13.2",
+    "sqlglot>=26.29.0",
     "sqlmodel>=0.0.24",
 ]
