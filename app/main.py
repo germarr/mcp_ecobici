@@ -12,26 +12,19 @@ from typing import List, Optional
 import datetime
 import os
 
-# Define database model
-class BikeStation(SQLModel, table=True):
-    """Represents a bike station in the bike-sharing system."""
-    id: Optional[int] = Field(default=None, primary_key=True)
-    name: str
-    location: str
-    capacity: int
-    available_bikes: int
-    last_updated: datetime.datetime = Field(default_factory=datetime.datetime.now)
+# Import models
+from app.models import BikeTrip,BikeStation
 
 # Create SQLite database engine
 # Note: In a production environment, the database URL should be in a config file
-DATABASE_URL = "sqlite:///bike_sharing.db"
+DATABASE_URL = "sqlite:///C:/Users/gerym/Documents/mcp/mcp_ecobici/bike_sharing2.db"
 engine = create_engine(DATABASE_URL, echo=True)
 
 # Initialize FastAPI app
 app = FastAPI(
     title="Ecobici API",
     description="API for a bike-sharing system using SQLite database",
-    version="0.1.0"
+    version="0.0.1"
 )
 
 # Set up templates and static files
@@ -45,54 +38,7 @@ def get_session():
     with Session(engine) as session:
         yield session
 
-# Create tables on startup
-@app.on_event("startup")
-def on_startup():
-    """Create database tables and add dummy data if needed."""
-    SQLModel.metadata.create_all(engine)
-    
-    # Add dummy data if database is empty
-    with Session(engine) as session:
-        stations = session.exec(select(BikeStation)).first()
-        if not stations:
-            dummy_stations = [
-                BikeStation(
-                    name="Central Park Station",
-                    location="40.7812, -73.9665",
-                    capacity=30,
-                    available_bikes=15
-                ),
-                BikeStation(
-                    name="Union Square",
-                    location="40.7359, -73.9911",
-                    capacity=25,
-                    available_bikes=10
-                ),
-                BikeStation(
-                    name="Brooklyn Heights",
-                    location="40.6958, -73.9936",
-                    capacity=20,
-                    available_bikes=5
-                ),
-                BikeStation(
-                    name="Times Square",
-                    location="40.7580, -73.9855",
-                    capacity=40,
-                    available_bikes=20
-                ),
-                BikeStation(
-                    name="Battery Park",
-                    location="40.7033, -74.0170",
-                    capacity=35,
-                    available_bikes=17
-                )
-            ]
-            for station in dummy_stations:
-                session.add(station)
-            session.commit()
-
 # API Endpoints
-
 @app.get("/")
 async def root(request: Request):
     """Root endpoint that serves the landing page."""

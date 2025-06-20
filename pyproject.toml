@@ -12,6 +12,7 @@ dependencies = [
     "mcp[cli]>=1.9.4",
     "pandas>=2.3.0",
     "pydantic-ai>=0.3.1",
+    "python-dotenv>=1.1.0",
     "requests>=2.32.4",
     "seaborn>=0.13.2",
     "sqlmodel>=0.0.24",
