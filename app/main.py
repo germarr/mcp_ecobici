@@ -14,7 +14,7 @@ import os
 import duckdb
 
 # Import models
-from app.models import BikeTrip,BikeStation,TripSummary
+from app.models import BikeTrip,BikeStation,TripSummary,TripAnalytics
 from fastapi import Query
 
 # Create SQLite database engine
@@ -77,6 +77,26 @@ async def get_station(station_id: int, session: Session = Depends(get_session)):
     if not station:
         raise HTTPException(status_code=404, detail="Station not found")
     return station
+
+@app.get("/all_trips",response_model=List[TripAnalytics],tags=["Trips 🚲"])
+async def get_all_trips(
+    pick_year: int = Query(..., description="Year in YYYY"),
+    pick_month: int = Query(None, description="Month (1-12)")
+):
+    with duckdb.connect("C:\\Users\\gerym\\Documents\\mcp\\mcp_ecobici\\ecobici.duckdb") as con:
+        if pick_month is None:
+            d = con.execute(f"""
+                SELECT *
+                FROM duckone_bikes
+                WHERE EXTRACT(year FROM fecha_arribo) = {pick_year} 
+            """).df().to_dict('records')
+        else:
+            d = con.execute(f"""
+                SELECT *
+                FROM duckone_bikes
+                WHERE EXTRACT(year FROM fecha_arribo) = {pick_year} AND EXTRACT(month FROM fecha_arribo) = {pick_month}
+            """).df().to_dict('records')
+    return d
 
 @app.get(
     "/trips",

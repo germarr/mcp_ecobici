@@ -46,6 +46,17 @@ class BikeStation(SQLModel, table=True):
     zip_code: int
     ciclo_estacion_retiro: str
 
+class TripAnalytics(SQLModel, table=False):
+    """
+    Represents analytics data for bike trips.
+    Not a database table.
+    """
+    fecha_arribo: Optional[datetime.datetime] = None
+    first_day_of_month: Optional[datetime.datetime] = None
+    day_of_the_week: Optional[str] = None
+    distance_meters: Optional[int] = None
+    time_between_trips: Optional[float] = None
+    total_trips: Optional[int] = None
 
 class TripSummary(SQLModel, table=False):
     """

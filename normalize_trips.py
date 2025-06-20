@@ -18,7 +18,12 @@ def _():
 
 @app.cell
 def _(duckdb):
-    monthName = '2025_02'
+    con = duckdb.connect('C:/Users/gerym/Documents/mcp/mcp_ecobici/ecobici.duckdb')
+    return (con,)
+
+
+@app.cell
+def _(duckdb):
     fileFolder = 'D:/Ecobici/CLEAN'
 
     # testDataset = duckdb.sql(f""" 
@@ -42,8 +47,6 @@ def _(duckdb):
 
 @app.cell
 def _(duckdb, rides_all):
-    path_u = 'C:/Users/gerym/Documents/mcp/mcp_ecobici/notebooks/data/2025_01.parquet'
-
     duckone_bikes = duckdb.sql(f""" 
     WITH base as (SELECT * 
             EXCLUDE(hora_retiro,hora_arribo), 
@@ -60,6 +63,35 @@ def _(duckdb, rides_all):
         FROM base 
         GROUP BY 1, 2, 3 
         ORDER BY fecha_arribo::TIMESTAMP ASC
+    """).df()
+
+    return
+
+
+@app.cell
+def _(con):
+    con.execute(f"""
+    CREATE OR REPLACE TABLE duckone_bikes AS 
+    SELECT * FROM duckone_bikes
+    """)
+    return
+
+
+@app.cell
+def _(con):
+    con.execute("""SELECT * FROM duckone_bikes""").df().dtypes
+    return
+
+
+@app.cell
+def _(con):
+    con.execute("""
+        SELECT *, 
+               DATE_TRUNC('month', fecha_arribo)::DATE AS first_day_of_month, 
+               EXTRACT(month FROM fecha_arribo) AS month, 
+               EXTRACT(year FROM fecha_arribo) AS year
+        FROM duckone_bikes 
+        LIMIT 10
     """).df()
 
     return
