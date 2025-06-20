@@ -121,9 +121,7 @@ async def get_trips():
     description="Retrieve trips information for a specific arrival date (fecha_arribo).",
     tags=["Trips 🚲"]
 )
-async def get_trips_by_date(
-    date: str = Query(..., description="Date in YYYY-MM-DD format")
-):
+async def get_trips_by_date(date: str = Query(..., description="Date in YYYY-MM-DD format")):
     """Get trips filtered by a specific arrival date."""
     with duckdb.connect("C:/Users/gerym/Documents/mcp/mcp_ecobici/bike_sharing2.db") as con:
         d = con.execute("""
