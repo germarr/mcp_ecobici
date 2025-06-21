@@ -18,52 +18,35 @@ os.environ["OPENAI_API_KEY"] = openai_key
 
 
 DB_SCHEMA = """
-CREATE TABLE records (
-genero_usuario  VARCHAR,
-edad_usuario   BIGINT,
- bici  VARCHAR,
-ciclo_estacion_retiro  VARCHAR,
-fecha_retiro  VARCHAR,
-ciclo_estacionarribo  VARCHAR,
+CREATE TABLE duckone_bikes (
 fecha_arribo  VARCHAR,
-fecha_retiro_completa  VARCHAR,
-fecha_arribo_completa  VARCHAR,
-time_between_trips   DOUBLE,
+first_day_of_month  VARCHAR,
 day_of_the_week  VARCHAR,
-is_weekend   BIGINT,
-lat_start   DOUBLE,
-lon_start   DOUBLE,
-lat_end   DOUBLE,
-lon_end   DOUBLE,
-distance_meters   DOUBLE,
-hora_retiro  VARCHAR,
-hora_arribo  VARCHAR
+distance_meters   INTEGER,
+time_between_trips   DOUBLE,
+total_trips  INTEGER
 );
 """
 
 SQL_EXAMPLES = [
     {
-        'request': 'show me the total trips by gender',
-        'response': "SELECT genero_usuario, COUNT(*) as trips FROM bike_trips GROUP BY genero_usuario",
+        'request': 'show me the total trips for October 21 of the year 2024',
+        'response': "SELECT fecha_arribo, total_trips FROM duckone_bikes WHERE EXTRACT(year FROM fecha_arribo) = 2024 AND EXTRACT(month FROM fecha_arribo) = 10 AND EXTRACT(day FROM fecha_arribo) = 21",
     },
     {
-        'request': 'show me the total number of trips by day of the week',
-        'response': "SELECT day_of_the_week, COUNT(*) as trips FROM bike_trips GROUP BY day_of_the_week ",
+        'request': 'show me the average distance traveled by day of the week',
+        'response': "SELECT day_of_the_week, AVG(distance_meters) as avg_distance FROM duckone_bikes GROUP BY day_of_the_week",
     },
     {
-        'request': 'show me records from yesterday',
-        'response': "SELECT * FROM bike_trips WHERE fecha_arribo::date > CURRENT_TIMESTAMP - INTERVAL '1 day'",
+        'request': 'show me the total time spent between trips for each month',
+        'response': "SELECT first_day_of_month, SUM(time_between_trips) as total_time FROM duckone_bikes GROUP BY first_day_of_month",
     },
     {
-        'request': 'show me the total time spent between trips and the total distance traveled',
-        'response': """
-            SELECT fecha_arribo,day_of_the_week, ROUND(SUM(time_between_trips),2) as time_between_trips, 
-        ROUND(SUM(distance_meters),2) as distance_meters 
-        FROM bike_trips 
-        GROUP BY fecha_arribo,day_of_the_week
-        """,
+        'request': 'show me the maximum distance traveled in a single trip',
+        'response': "SELECT MAX(distance_meters) as max_distance FROM duckone_bikes",
     },
 ]
+
 
 class Success(BaseModel):
     """Response when SQL could be successfully generated."""
@@ -86,7 +69,7 @@ agent = Agent[Response](
 @agent.system_prompt
 def system_prompt() -> str:
     return f"""
-Given the following SQLITE table of records, your job is to
+Given the following SQL table of records, your job is to
 write a SQL query that suits the user's request. 
 THE TABLE NAME IN ALL THE QUEIRES IS bike_trips
 

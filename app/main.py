@@ -61,115 +61,133 @@ async def root(request: Request):
 )
 async def get_all_stations(session: Session = Depends(get_session)):
     """Get all bike stations."""
-    stations = session.exec(select(BikeStation)).all()
+    with duckdb.connect("C:\\Users\\gerym\\Documents\\mcp\\mcp_ecobici\\ecobici.duckdb") as con:
+        stations = con.execute("SELECT * FROM stations").df().to_dict('records')
+    
     return stations
 
 @app.get(
-    "/stations/{station_id}",
+    "/stations",
     response_model=BikeStation,
     summary="Get Station by ID",
     description="Retrieve details for a specific bike station by its ID.",
     tags=["Stations"]
 )
-async def get_station(station_id: int, session: Session = Depends(get_session)):
+async def get_station(id_station: str = Query("271-272", description="Use the Station Id"), ):
     """Get a specific bike station by ID."""
-    station = session.get(BikeStation, station_id)
+    with duckdb.connect("C:\\Users\\gerym\\Documents\\mcp\\mcp_ecobici\\ecobici.duckdb") as con:
+        station = con.execute(f"SELECT * FROM stations WHERE ciclo_estacionarribo = '{id_station}'").df().to_dict('records')[0]
+    
     if not station:
         raise HTTPException(status_code=404, detail="Station not found")
     return station
 
-@app.get("/all_trips",response_model=List[TripAnalytics],tags=["Trips 🚲"])
+@app.get(
+        "/all_trips",
+        response_model=List[TripAnalytics],
+        tags=["Trips 🚲"],
+        summary="Retrieve trips information by day",
+        description="Based on year,month or day retrieve the trips information"
+)
 async def get_all_trips(
-    pick_year: int = Query(..., description="Year in YYYY"),
-    pick_month: int = Query(None, description="Month (1-12)")
+    pick_year: Optional[int] = Query(None, description="Year in YYYY"),
+    pick_month: Optional[int] = Query(None, description="Month (1-12)"),
+    pick_day: Optional[int] = Query(None, description="Day (1-31)")
 ):
     with duckdb.connect("C:\\Users\\gerym\\Documents\\mcp\\mcp_ecobici\\ecobici.duckdb") as con:
-        if pick_month is None:
-            d = con.execute(f"""
-                SELECT *
-                FROM duckone_bikes
-                WHERE EXTRACT(year FROM fecha_arribo) = {pick_year} 
-            """).df().to_dict('records')
+        if pick_year == None and pick_month == None and pick_day == None:
+            return con.execute("SELECT * FROM duckone_bikes LIMIT 10").df().to_dict('records')
         else:
-            d = con.execute(f"""
-                SELECT *
-                FROM duckone_bikes
-                WHERE EXTRACT(year FROM fecha_arribo) = {pick_year} AND EXTRACT(month FROM fecha_arribo) = {pick_month}
-            """).df().to_dict('records')
+            base_query = "SELECT * FROM duckone_bikes"
+            filters = []
+
+            if pick_year is not None:
+                filters.append(f"EXTRACT(year FROM fecha_arribo) = {pick_year}")
+            if pick_month is not None:
+                filters.append(f"EXTRACT(month FROM fecha_arribo) = {pick_month}")
+            if pick_day is not None:
+                filters.append(f"EXTRACT(day FROM fecha_arribo) = {pick_day}")
+
+            if filters:
+                query = f"{base_query} WHERE {' AND '.join(filters)}"
+            else:
+                query = base_query
+
+            d = con.execute(query).df().to_dict('records')
     return d
 
-@app.get(
-    "/trips",
-    response_model=List[TripSummary],
-    summary="Get Trips by Day",
-    description="Retrieve trips information by day",
-    tags=["Trips 🚲"]
-)
-async def get_trips():
-    """Get the total number of trips by day."""
-    with duckdb.connect("C:/Users/gerym/Documents/mcp/mcp_ecobici/bike_sharing2.db") as con:
-        d = con.execute("""
-        SELECT * 
-        EXCLUDE(hora_retiro,hora_arribo), 
-        fecha_retiro_completa::TIME as hora_retiro,
-        fecha_arribo_completa::TIME as hora_arribo
-        FROM bike_trip
-        """).df()
+# @app.get(
+#     "/trips/",
+#     response_model=List[TripSummary],
+#     summary="Get Trips by Day",
+#     description="Retrieve trips information by day",
+#     tags=["Trips 🚲"]
+# )
+# async def get_trips():
+#     """Get the total number of trips by day."""
+#     with duckdb.connect("C:/Users/gerym/Documents/mcp/mcp_ecobici/bike_sharing2.db") as con:
+#         d = con.execute("""
+#         SELECT * 
+#         EXCLUDE(hora_retiro,hora_arribo), 
+#         fecha_retiro_completa::TIME as hora_retiro,
+#         fecha_arribo_completa::TIME as hora_arribo
+#         FROM bike_trip
+#         """).df()
 
-        tripsData = con.execute("""
-            SELECT 
-                fecha_arribo,
-                DATE_TRUNC('month', fecha_arribo::DATE) AS first_day_of_month,
-                day_of_the_week, 
-                SUM(distance_meters)::INTEGER AS distance_meters,
-                ROUND(SUM(time_between_trips), 2) AS time_between_trips,
-                COUNT(*) AS total_trips 
-            FROM d 
-            GROUP BY 1, 2, 3 
-            ORDER BY fecha_arribo ASC
-        """).df().to_dict('records')
+#         tripsData = con.execute("""
+#             SELECT 
+#                 fecha_arribo,
+#                 DATE_TRUNC('month', fecha_arribo::DATE) AS first_day_of_month,
+#                 day_of_the_week, 
+#                 SUM(distance_meters)::INTEGER AS distance_meters,
+#                 ROUND(SUM(time_between_trips), 2) AS time_between_trips,
+#                 COUNT(*) AS total_trips 
+#             FROM d 
+#             GROUP BY 1, 2, 3 
+#             ORDER BY fecha_arribo ASC
+#         """).df().to_dict('records')
 
-    if not tripsData:
-        raise HTTPException(status_code=404, detail="No Trips found")
+#     if not tripsData:
+#         raise HTTPException(status_code=404, detail="No Trips found")
     
-    return tripsData
+#     return tripsData
 
-@app.get(
-    "/trips/by-date",
-    response_model=TripSummary,
-    summary="Get Trips by Specific Date",
-    description="Retrieve trips information for a specific arrival date (fecha_arribo).",
-    tags=["Trips 🚲"]
-)
-async def get_trips_by_date(date: str = Query(..., description="Date in YYYY-MM-DD format")):
-    """Get trips filtered by a specific arrival date."""
-    with duckdb.connect("C:/Users/gerym/Documents/mcp/mcp_ecobici/bike_sharing2.db") as con:
-        d = con.execute("""
-        SELECT * 
-        EXCLUDE(hora_retiro,hora_arribo), 
-        fecha_retiro_completa::TIME as hora_retiro,
-        fecha_arribo_completa::TIME as hora_arribo
-        FROM bike_trip
-        """).df()
+# @app.get(
+#     "/trips",
+#     response_model=TripSummary,
+#     summary="Get Trips by Specific Date",
+#     description="Retrieve trips information for a specific arrival date (fecha_arribo).",
+#     tags=["Trips 🚲"]
+# )
+# async def get_trips_by_date(date: str = Query(..., description="Date in YYYY-MM-DD format")):
+#     """Get trips filtered by a specific arrival date."""
+#     with duckdb.connect("C:/Users/gerym/Documents/mcp/mcp_ecobici/bike_sharing2.db") as con:
+#         d = con.execute("""
+#         SELECT * 
+#         EXCLUDE(hora_retiro,hora_arribo), 
+#         fecha_retiro_completa::TIME as hora_retiro,
+#         fecha_arribo_completa::TIME as hora_arribo
+#         FROM bike_trip
+#         """).df()
 
-        tripsData = con.execute(f"""
-            SELECT 
-                fecha_arribo,
-                DATE_TRUNC('month', fecha_arribo::DATE) AS first_day_of_month,
-                day_of_the_week, 
-                SUM(distance_meters)::INTEGER AS distance_meters,
-                ROUND(SUM(time_between_trips), 2) AS time_between_trips,
-                COUNT(*) AS total_trips 
-            FROM d 
-            WHERE fecha_arribo::DATE = '{date}'
-            GROUP BY 1, 2, 3 
-            ORDER BY fecha_arribo::DATE ASC
-        """).df().to_dict('records')[0]
+#         tripsData = con.execute(f"""
+#             SELECT 
+#                 fecha_arribo,
+#                 DATE_TRUNC('month', fecha_arribo::DATE) AS first_day_of_month,
+#                 day_of_the_week, 
+#                 SUM(distance_meters)::INTEGER AS distance_meters,
+#                 ROUND(SUM(time_between_trips), 2) AS time_between_trips,
+#                 COUNT(*) AS total_trips 
+#             FROM d 
+#             WHERE fecha_arribo::DATE = '{date}'
+#             GROUP BY 1, 2, 3 
+#             ORDER BY fecha_arribo::DATE ASC
+#         """).df().to_dict('records')[0]
 
-    if not tripsData:
-        raise HTTPException(status_code=404, detail="No Trips found for the selected date")
+#     if not tripsData:
+#         raise HTTPException(status_code=404, detail="No Trips found for the selected date")
     
-    return tripsData
+#     return tripsData
 
 # @app.post("/stations/", response_model=BikeStation)
 # async def create_station(station: BikeStation, session: Session = Depends(get_session)):

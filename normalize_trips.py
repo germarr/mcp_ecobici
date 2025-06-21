@@ -13,7 +13,8 @@ def _():
 def _():
     import pandas as pd
     import duckdb
-    return (duckdb,)
+    import uuid
+    return duckdb, uuid
 
 
 @app.cell
@@ -43,6 +44,34 @@ def _(duckdb):
         '{fileFolder}/2017/*.parquet']) 
     """)
     return (rides_all,)
+
+
+@app.cell
+def _(duckdb):
+    stations = duckdb.sql(f"""SELECT * FROM read_csv('D:\Ecobici\stations_alcaldias_colonias_zips.csv')""").df()
+    return (stations,)
+
+
+@app.cell
+def _(stations, uuid):
+    stations['index'] = [str(uuid.uuid4()) for _ in range(len(stations))]
+    stations['ciclo_estacion_retiro'] = stations['ciclo_estacionarribo']
+    return
+
+
+@app.cell
+def _(stations):
+    stations.head(3)
+    return
+
+
+@app.cell
+def _(con):
+    con.execute(f"""
+    CREATE OR REPLACE TABLE stations AS 
+    SELECT * FROM stations
+    """)
+    return
 
 
 @app.cell
@@ -98,7 +127,15 @@ def _(con):
 
 
 @app.cell
-def _():
+def _(con):
+    con.execute("""
+        SELECT *, 
+               DATE_TRUNC('month', fecha_arribo)::DATE AS first_day_of_month, 
+               EXTRACT(month FROM fecha_arribo) AS month, 
+               EXTRACT(year FROM fecha_arribo) AS year
+        FROM stations 
+        LIMIT 10
+    """).df()
     return
 
 

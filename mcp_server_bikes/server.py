@@ -33,6 +33,24 @@ mcp = FastMCP("Ecobici Bike-Sharing API")
 #     return tables
 
 
+# @mcp.tool()
+# async def generate_sql_query(user_prompt: str) -> dict:
+#     """Generate an SQL query string based on the user prompt using the SQL agent."""
+#     result = await sql_agent.run(user_prompt)
+#     # The result may be Success or InvalidRequest
+#     if hasattr(result.output, 'sql_query'):
+#         # Optionally, you can execute the query with duckdb here if needed
+#         with duckdb.connect("C:/Users/gerym/Documents/mcp/mcp_ecobici/bike_sharing.db") as con:
+#             tables = con.execute(result.output.sql_query).df().to_dict('records')
+
+#         return {
+#             'sql_query': result.output.sql_query,
+#             'explanation': result.output.explanation,
+#             'result': tables
+#         }
+#     else:
+#         return {'error': getattr(result.output, 'error_message', 'Unknown error')}
+
 @mcp.tool()
 async def generate_sql_query(user_prompt: str) -> dict:
     """Generate an SQL query string based on the user prompt using the SQL agent."""
@@ -40,7 +58,7 @@ async def generate_sql_query(user_prompt: str) -> dict:
     # The result may be Success or InvalidRequest
     if hasattr(result.output, 'sql_query'):
         # Optionally, you can execute the query with duckdb here if needed
-        with duckdb.connect("C:/Users/gerym/Documents/mcp/mcp_ecobici/bike_sharing.db") as con:
+        with duckdb.connect("C:\\Users\\gerym\\Documents\\mcp\\mcp_ecobici\\ecobici.duckdb") as con:
             tables = con.execute(result.output.sql_query).df().to_dict('records')
 
         return {
